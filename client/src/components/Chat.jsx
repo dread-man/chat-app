@@ -1,31 +1,88 @@
-import React, { useState } from 'react'
-import styles from './Chat.module.scss'
+import React, { useEffect, useMemo, useState } from 'react'
+import { v4 as uuidv4 } from 'uuid'
+import ScrollToBottom from 'react-scroll-to-bottom'
 
 export function Chat({ socket, username, room }) {
+    const [currentMessage, setCurrentMessage] = useState('')
+    const [messageList, setMessageList] = useState([])
 
-	const [currentMessage, setCurrentMessage] = useState('')
+    const sendMessage = async () => {
+        if (currentMessage !== '') {
+            const messageData = {
+                id: uuidv4(),
+                room: room,
+                author: username,
+                message: currentMessage,
+                time:
+                    new Date(Date.now()).getHours() +
+                    ':' +
+                    new Date(Date.now()).getMinutes(),
+            }
 
-	const sendMessage = () => {
-		if(currentMessage !== '') {
-			const messageData = {
-				room: room,
-				aurhor: username,
-				message: currentMessage,
-				time: new Date(Data.now()).getHours() + ':' + new Date(Date.now()).getMinutes(),
-			}
-		}
-	}
+            await socket.emit('send_message', messageData)
+            setMessageList((list) => [...list, messageData])
+			setCurrentMessage('')
+        }
+    }
 
-    return <div>
-		<div className={styles.chatHeader}>
-			<p>Live Chat</p>
-		</div>
-		<div className={styles.chatBody}>
+    useMemo(() => {
+        socket.on('receive_message', (data) => {
+            setMessageList((list) => [...list, data])
+        })
+    }, [socket])
 
-		</div>
-		<div className={styles.chatFooter}>
-			<input type="text" placeholder='Hey...' onChange={(event) => setCurrentMessage(event.target.value)}/>
-			<button onClick={sendMessage}>&#9658;</button>
-		</div>
-	</div>
+    return (
+        <div className="chat-window">
+            <div className="chat-header">
+                <p>Live Chat</p>
+            </div>
+            <div className="chat-body">
+                <ScrollToBottom className="message-container">
+                    {messageList.map((messageContent) => {
+                        return (
+                            <div
+                                key={messageContent.id}
+                                className="message"
+                                id={
+                                    username !== messageContent.author
+                                        ? 'you'
+                                        : 'other'
+                                }
+                            >
+                                <div>
+                                    <div className="message-content">
+                                        <p>{messageContent.message}</p>
+                                    </div>
+                                    <div className="message-meta">
+                                        <p id="time">{messageContent.time}</p>
+                                        <p id="author">
+                                            {messageContent.author}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </ScrollToBottom>
+            </div>
+            <div className="chat-footer">
+                <input
+                    type="text"
+					value={currentMessage}
+                    placeholder="Hey..."
+                    onChange={(event) => setCurrentMessage(event.target.value)}
+                    onKeyPress={(event) => {
+                        event.key === 'Enter' && sendMessage()
+                    }}
+                />
+                <button
+                    onClick={() => {
+                        sendMessage()
+                    }}
+                >
+                    &#9658;
+                </button>
+            </div>
+        </div>
+    )
 }
