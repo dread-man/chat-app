@@ -5,6 +5,7 @@ import ScrollToBottom from 'react-scroll-to-bottom'
 export function Chat({ socket, username, room }) {
     const [currentMessage, setCurrentMessage] = useState('')
     const [messageList, setMessageList] = useState([])
+    const [disconnected, setDisconected] = useState(false)
 
     const sendMessage = async () => {
         if (currentMessage !== '') {
@@ -21,13 +22,18 @@ export function Chat({ socket, username, room }) {
 
             await socket.emit('send_message', messageData)
             setMessageList((list) => [...list, messageData])
-			setCurrentMessage('')
+            setCurrentMessage('')
         }
     }
 
     useMemo(() => {
         socket.on('receive_message', (data) => {
             setMessageList((list) => [...list, data])
+        })
+        socket.on('user-disconnected', (data) => {
+            if (data.userId) {
+                setDisconected(true)
+            }
         })
     }, [socket])
 
@@ -44,7 +50,7 @@ export function Chat({ socket, username, room }) {
                                 key={messageContent.id}
                                 className="message"
                                 id={
-                                    username !== messageContent.author
+                                    username === messageContent.author
                                         ? 'you'
                                         : 'other'
                                 }
@@ -63,12 +69,13 @@ export function Chat({ socket, username, room }) {
                             </div>
                         )
                     })}
+                    {disconnected && <h4 className="user-disconected">User disconnected</h4>}
                 </ScrollToBottom>
             </div>
             <div className="chat-footer">
                 <input
                     type="text"
-					value={currentMessage}
+                    value={currentMessage}
                     placeholder="Hey..."
                     onChange={(event) => setCurrentMessage(event.target.value)}
                     onKeyPress={(event) => {

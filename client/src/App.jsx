@@ -1,6 +1,6 @@
 import io from 'socket.io-client'
 import './App.css'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Chat } from './components/Chat'
 
 const socket = io.connect('http://localhost:3001')
@@ -16,6 +16,8 @@ function App() {
 			setShowChat(true)
         }
     }
+
+	
 
     return (
         <div className="App">

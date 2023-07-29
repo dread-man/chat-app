@@ -190,3 +190,7 @@ body {
 .hide {
     opacity: 0 !important;
 }
+.user-disconected {
+	text-align: center;
+	margin: 10px;
+}
